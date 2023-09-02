@@ -6,7 +6,6 @@
 #include <mcp_can.h>
 // Defining Constants
 #define CAN_RECEIVE_ID 0x123
-#define CAN_SEND_ID 0x124
 #define CAN_IMP_ID 0x100
 #define CAN_INT_PIN 2
 #define CAN_CS_PIN 4
@@ -51,7 +50,7 @@ struct can_frame
   unsigned long id;
   byte length;
   byte data[8];
-} canFrame, canSendFrame;
+} canFrame;
 struct LCD_DATA
 {
   short waterLevel;
@@ -326,14 +325,8 @@ void handleButtonPress()
   {
     displayOnOffButton = false;
     displayBacklightState = !displayBacklightState;
-    eepromWrite(EEPROM_BACKLIGHT, displayBacklightState);
     lcd.setBacklight(displayBacklightState);
-    canSendFrame.id = CAN_SEND_ID;
-    canSendFrame.length = 3;
-    canSendFrame.data[0] = 100;
-    canSendFrame.data[1] = displayBacklightState;
-    canSendFrame.data[2] = 100;
-    CAN_BUS.sendMsgBuf(canSendFrame.id, 0, canSendFrame.length, canSendFrame.data);
+    eepromWrite(EEPROM_BACKLIGHT, displayBacklightState);
     beep();
   }
   else if (modeButton)
