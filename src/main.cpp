@@ -28,18 +28,19 @@
 // Declaring Variables
 unsigned long last_interrupt_time = 0;
 unsigned long interrupt_time = 0;
-boolean displayOnOffButton = false;               // Is backlight button pressed
-boolean modeButton = false;                       // Is mode button pressed
-boolean actionButton = false;                     // Is action button pressed
-boolean displayBacklightState = true;             // Is backlight on/off
-boolean systemState = true;                       // Is all sensors working
-boolean tankState = false, normalMessage = false; // CAN is message available
-boolean motorState = false;                       // Motor on/off
-unsigned long dryRunStartTime = 0;                // Dry run timer start time
-boolean setTimer = false;                         // Dry run timer start
-boolean dryRunTimerStarted = false;               // Is dry run timer started
-boolean dryRunTimerExpired = false;               // Is dry run timer ended
+boolean displayOnOffButton = false;                    // Is backlight button pressed
+boolean modeButton = false;                            // Is mode button pressed
+boolean actionButton = false;                          // Is action button pressed
+boolean displayBacklightState = true;                  // Is backlight on/off
+boolean systemState = true;                            // Is all sensors working
+boolean tankState = false, normalMessage = false;      // CAN is message available
+boolean motorState = false, motorStateRunOnce = false; // Motor on/off
+unsigned long dryRunStartTime = 0;                     // Dry run timer start time
+boolean setTimer = false;                              // Dry run timer start
+boolean dryRunTimerStarted = false;                    // Is dry run timer started
+boolean dryRunTimerExpired = false;                    // Is dry run timer ended
 boolean needAction = false;
+boolean motorStopOnce = false;
 byte errorCount = 0;
 byte previousFirstRowLength = 0;
 byte previousSecondRowLength = 0;
@@ -170,7 +171,7 @@ void loop()
   {
     mainsLED(false);
   }
-  delay(100);
+  delay(50);
 }
 
 // Handler functions
@@ -214,7 +215,7 @@ void handleMotorState()
 
 void handleTimer()
 {
-  if (millis() < DRY_RUN_WAIT_TIME)
+  if (millis() < DRY_RUN_WAIT_TIME || dryRunStartTime < millis())
   {
     dryRunStartTime = 0;
   }
@@ -302,7 +303,6 @@ void handleTankState()
     }
     else
     {
-      normalBeep();
       // When tank is full
       if (canFrame.data[1] && !canFrame.data[2])
       {
@@ -461,7 +461,6 @@ void checkState(boolean system_state)
   if (system_state)
   {
     lcdSecondRow("       OK       ");
-    normalBeep();
   }
   else
   {
@@ -541,10 +540,22 @@ void motorLED(boolean onOff)
   if (onOff)
   {
     digitalWrite(MOTOR_LED_PIN, HIGH);
+    if (!motorStateRunOnce)
+    {
+      normalBeep();
+      motorStateRunOnce = true;
+      motorStopOnce = false;
+    }
   }
   else
   {
     digitalWrite(MOTOR_LED_PIN, LOW);
+    if (!motorStopOnce)
+    {
+      normalBeep();
+      motorStopOnce = true;
+      motorStateRunOnce = false;
+    }
   }
 }
 
